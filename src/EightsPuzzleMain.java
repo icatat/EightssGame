@@ -6,6 +6,8 @@ import java.util.Collection;
 import java.util.PriorityQueue;
 import java.util.Scanner;
 import java.util.Stack;
+import java.util.Set;
+import java.util.HashSet;
 
 
 
@@ -80,14 +82,14 @@ public class EightsPuzzleMain {
 		} else if (searchAlgorithm.equals("ids")) {
 			throw new RuntimeException("iterative deepening search not implemented yet");
 		} else {
-			
+
 		}
 
 		if (searchTypeString.equals("tree")) {
 			searchType = ClassicalSearch.SearchType.Tree;
 		} else  {
 			searchType = ClassicalSearch.SearchType.Graph;
-		} 
+		}
 
 
 
@@ -95,7 +97,7 @@ public class EightsPuzzleMain {
 		//////////////////////////////////////////////////////////////////
 		// Run the search.
 		//////////////////////////////////////////////////////////////////
-		
+
 		ClassicalSearch classical_search = new ClassicalSearch(initial_node,
 				goal_state, maxNodes, maxDepth, searchType);
 
@@ -152,7 +154,7 @@ class ClassicalSearch {
 	/**
 	 * Creates a new ClassicalSearch object in order to perform a classical
 	 * search algorithm.
-	 * 
+	 *
 	 * @param initialNode
 	 *            The root node of the search tree.
 	 * @param goalState
@@ -166,7 +168,7 @@ class ClassicalSearch {
 	 *            The type of search to be performed
 	 */
 	public ClassicalSearch(SearchNode initialNode, EightsPuzzleWorldState goalState,
-			int maxNodes, int maxDepth, SearchType searchType) {
+						   int maxNodes, int maxDepth, SearchType searchType) {
 		this.initialNode = initialNode;
 		this.goalState = goalState;
 		this.maxNodes = maxNodes;
@@ -178,7 +180,7 @@ class ClassicalSearch {
 
 	/**
 	 * Returns a node in the search tree that represents a solution.
-	 * 
+	 *
 	 * @return A node in the search tree that represents a solution, or null if
 	 *         a solution has not been found.
 	 */
@@ -188,7 +190,7 @@ class ClassicalSearch {
 
 	/**
 	 * Returns the number of nodes that have been expanded.
-	 * 
+	 *
 	 * @return The number of nodes that have been expanded.
 	 */
 	public int getExpandedNodes() {
@@ -197,25 +199,15 @@ class ClassicalSearch {
 
 	/**
 	 * Returns the number of nodes that have been generated.
-	 * 
+	 *
 	 * @return The number of nodes that have been generated.
 	 */
 	public int getGeneratedNodes() {
 		return generatedNodes;
 	}
-
-	private int getNodeDepth (SearchNode node) {
-		int depth = 0;
-		while (node != initialNode) {
-			node = node.parent;
-			depth++;
-		}
-
-		return depth;
-	}
 	/**
 	 * Perform the classical state space search defined by this object.
-	 * 
+	 *
 	 * @return true if a solution is found and false otherwise.
 	 */
 	public boolean search() {
@@ -223,19 +215,16 @@ class ClassicalSearch {
 		// nodes are ordered according to the cost of their states.
 		PriorityQueue<SearchNode> frontier = null;
 		//mark visited states
-		ArrayList<EightsPuzzleWorldState> visited = new ArrayList<EightsPuzzleWorldState>();
+		Set<EightsPuzzleWorldState> visited = new HashSet<EightsPuzzleWorldState>();
 		// Place the initial node into the frontier.
 		frontier = new PriorityQueue<SearchNode>();
 		frontier.add(initialNode);
 		visited.add(initialNode.getState());
 		// As long as we haven't found a solution and there are still nodes in
 		// the frontier, continue the search.
-		while (!frontier.isEmpty() && solutionNode == null) {
+		while (!frontier.isEmpty() && solutionNode == null && (this.maxNodes == -1 || this.maxNodes != -1 && expandedNodes < maxNodes)) {
 
-			if (this.maxNodes != -1 && expandedNodes >= maxNodes) {
-				System.out.println("Expanded the maximum number of nodes. No Solution found");
-				break;
-			}
+
 			// Get the lowest cost node from the priority queue.
 			SearchNode currentNode = frontier.poll();
 
@@ -251,6 +240,7 @@ class ClassicalSearch {
 				if (VERBOSE) {
 					System.out.println("Solution found");
 				}
+				System.out.println(solutionNode.getDepth());
 				break;
 			}
 
@@ -264,10 +254,11 @@ class ClassicalSearch {
 			// Put each of the child nodes into the frontier for consideration
 			// later.
 			for (SearchNode child : childNodes) {
+				int childDepth = child.getDepth();
 				generatedNodes++;
-				int childDepth = getNodeDepth(child);
-					if ((maxDepth == -1 || maxDepth >= 0 && childDepth < maxDepth) &&
-							(this.searchType.equals(SearchType.Graph) && !visited.contains(child.getState()) || this.searchType.equals(SearchType.Tree))) {
+				if ((maxDepth == -1 || maxDepth >= 0 && childDepth < maxDepth)) {
+
+					if (this.searchType.equals(SearchType.Graph) && !visited.contains(child.getState()) || this.searchType.equals(SearchType.Tree)) {
 						frontier.add(child);
 						visited.add(child.getState());
 
@@ -277,6 +268,7 @@ class ClassicalSearch {
 									+ child.getCost() + ")\n\n");
 						}
 					}
+				}
 
 			}
 		}
@@ -313,7 +305,7 @@ class EightsPuzzleWorldState  {
 
 	/**
 	 * Create a new puzzle state representing the given puzzle board.
-	 * 
+	 *
 	 * @param board
 	 *            An array representing the numbers on the tiles in the puzzle
 	 *            board.
@@ -347,7 +339,7 @@ class EightsPuzzleWorldState  {
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see WorldState#hashCode()
 	 */
 	@Override
@@ -359,7 +351,7 @@ class EightsPuzzleWorldState  {
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see WorldState#equals(java.lang.Object)
 	 */
 	@Override
@@ -367,18 +359,19 @@ class EightsPuzzleWorldState  {
 		EightsPuzzleWorldState other = (EightsPuzzleWorldState) obj;
 		// Arrays.deepEquals() tests for the equality of all elements in a 2-D
 		// array, which is what we need here.
-		
+
 		return Arrays.deepEquals(board, other.board);
 	}
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see WorldState#getValidActions()
 	 */
 	public ArrayList<EightsPuzzleAction> getValidActions() {
 		ArrayList<EightsPuzzleAction> actions = new ArrayList<EightsPuzzleAction>();
 
+		// Can we slide up? If so, add the relevant action.
 		if (holeRow < boardHeight - 1) {
 			actions.add(new EightsPuzzleAction(EightsPuzzleAction.Direction.Up));
 		}
@@ -392,15 +385,12 @@ class EightsPuzzleWorldState  {
 			actions.add(new EightsPuzzleAction(EightsPuzzleAction.Direction.Left));
 		}
 
-
-
-
 		return actions;
 	}
 
 	/**
 	 * Clones the puzzle board.
-	 * 
+	 *
 	 * @return A new 2-D array containing a copy of the calling object's puzzle
 	 *         board.
 	 */
@@ -490,7 +480,7 @@ class EightsPuzzleAction {
 
 	/**
 	 * Create a new EightsPuzzleAction representing a move in a given direction.
-	 * 
+	 *
 	 * @param direction
 	 *            The direction in which a tile is moved to perform this action.
 	 */
@@ -536,9 +526,11 @@ abstract class SearchNode implements Comparable<SearchNode> {
 	// or null if this node is the root of the tree.
 	protected EightsPuzzleAction action;
 
+	protected int depth = 0;
+
 	/**
 	 * Creates a new node with the given parent, state, and action.
-	 * 
+	 *
 	 * @param parent
 	 *            The parent of this node in the search tree, or null if this
 	 *            node is the root of the tree.
@@ -552,13 +544,16 @@ abstract class SearchNode implements Comparable<SearchNode> {
 		this.parent = parent;
 		this.state = state;
 		this.action = action;
+		if(parent != null) {
+			depth = parent.depth + 1;
+		}
 	}
 
 	/**
 	 * Returns the cost of this node, or throws a runtime exception if the cost
 	 * was not initialized correctly in the constructor when the node was
 	 * created.
-	 * 
+	 *
 	 * @return The cost of this node.
 	 */
 	public double getCost() {
@@ -570,9 +565,13 @@ abstract class SearchNode implements Comparable<SearchNode> {
 		return cost;
 	}
 
+	public int getDepth() {
+		return depth;
+	}
+
 	/**
 	 * Returns the parent of this node.
-	 * 
+	 *
 	 * @return The parent of this node.
 	 */
 	public SearchNode getParent() {
@@ -581,7 +580,7 @@ abstract class SearchNode implements Comparable<SearchNode> {
 
 	/**
 	 * Returns the state of the world represented by this node.
-	 * 
+	 *
 	 * @return The state of the world represented by this node.
 	 */
 	public EightsPuzzleWorldState getState() {
@@ -592,7 +591,7 @@ abstract class SearchNode implements Comparable<SearchNode> {
 	 * We want to be able to use SearchNode objects as the elements of a
 	 * PriorityQueue, so we must override the compareTo method, specifying that
 	 * lower-cost nodes are "less" than higher-cost nodes.
-	 * 
+	 *
 	 * @see Comparable#compareTo(Object)
 	 */
 	@Override
@@ -610,7 +609,7 @@ abstract class SearchNode implements Comparable<SearchNode> {
 	/**
 	 * Expands this node, returning a collection of all nodes generated by
 	 * applying valid actions to the current node.
-	 * 
+	 *
 	 * @return A collection of nodes that can be reached by applying actions to
 	 *         the current node.
 	 */
@@ -632,7 +631,7 @@ abstract class SearchNode implements Comparable<SearchNode> {
 	// Param childState: The state to be assigned to the new child node.
 	// Param action: The action to be assigned to the new child node.
 	protected abstract SearchNode createChild(EightsPuzzleWorldState childState,
-			EightsPuzzleAction action);
+											  EightsPuzzleAction action);
 
 	// return a string describing all of the states and actions on the path
 	// from the initial node to the calling node
@@ -640,7 +639,7 @@ abstract class SearchNode implements Comparable<SearchNode> {
 	/**
 	 * Returns a string describing the path from the initial node to the calling
 	 * node.
-	 * 
+	 *
 	 * @return A string describing all of the states and actions on the path
 	 *         from the initial node to the calling node.
 	 */
@@ -675,7 +674,7 @@ abstract class SearchNode implements Comparable<SearchNode> {
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see java.lang.Object#toString()
 	 */
 	@Override
@@ -701,7 +700,7 @@ class BreadthFirstSearchNode extends SearchNode {
 	 * @param action
 	 */
 	public BreadthFirstSearchNode(SearchNode parent, EightsPuzzleWorldState state,
-			EightsPuzzleAction action) {
+								  EightsPuzzleAction action) {
 		super(parent, state, action);
 		numCreated++;
 		cost = numCreated;
@@ -726,7 +725,7 @@ class DepthFirstSearchNode extends SearchNode {
 	 * @param action
 	 */
 	public DepthFirstSearchNode(SearchNode parent, EightsPuzzleWorldState state,
-								  EightsPuzzleAction action) {
+								EightsPuzzleAction action) {
 		super(parent, state, action);
 		numCreated--;
 		cost = numCreated;
@@ -745,7 +744,6 @@ abstract class AStarSearch extends SearchNode {
 	// Keep track of the total number of nodes created, as this will be used for
 	// assigning the cost of a node.
 	private static int heuristic;
-	private int steps = 0;
 	EightsPuzzleWorldState goalState;
 	/**
 	 * @param parent
@@ -753,17 +751,17 @@ abstract class AStarSearch extends SearchNode {
 	 * @param action
 	 */
 	public AStarSearch(AStarSearch parent, EightsPuzzleWorldState state,
-						 EightsPuzzleAction action, EightsPuzzleWorldState goalState) {
+					   EightsPuzzleAction action, EightsPuzzleWorldState goalState) {
 		super(parent, state, action);
 		this.goalState = goalState;
-		if (parent != null) {
-			steps = parent.getSteps() + 1;
+		heuristic = this.calculateHeuristic(state, goalState);
+		if (parent == null) {
+			cost = heuristic;
+		} else {
+			cost = parent.getDepth() + heuristic;
 		}
-		heuristic = calculateHeuristic(state, goalState);
-		cost = steps + heuristic;
-	}
 
-	public int getSteps() { return this.steps; }
+	}
 
 	public EightsPuzzleWorldState getGoalState() { return this.goalState; }
 
@@ -779,7 +777,7 @@ class AStarNumTiles extends AStarSearch {
 	 * @param action
 	 */
 	public AStarNumTiles(AStarNumTiles parent, EightsPuzzleWorldState state,
-								EightsPuzzleAction action, EightsPuzzleWorldState goalState) {
+						 EightsPuzzleAction action, EightsPuzzleWorldState goalState) {
 		super(parent, state, action, goalState);
 	}
 
@@ -819,7 +817,7 @@ class AStarManhattan extends AStarSearch {
 	 * @param action
 	 */
 	public AStarManhattan(AStarManhattan parent, EightsPuzzleWorldState state,
-						 EightsPuzzleAction action, EightsPuzzleWorldState goalState) {
+						  EightsPuzzleAction action, EightsPuzzleWorldState goalState) {
 		super(parent, state, action, goalState);
 	}
 
@@ -844,13 +842,25 @@ class AStarManhattan extends AStarSearch {
 							}
 						}
 					}
-
+					// findExpectedPosition(goalBoard, curBoard[i][j], expectedRow, expectedCol);
 					heuristic += (Math.abs(expectedCol - j) + Math.abs(expectedRow - i));
 				}
 			}
 		}
 		return heuristic;
 
+	}
+
+	private void findExpectedPosition (int [][] goalBoard, int val, int expectedRow, int expectedCol) {
+		for ( int row = 0; row < goalBoard.length; row++) {
+			for (int col = 0; col < goalBoard[0].length; col++) {
+				if ( goalBoard[row][col] == val) {
+					expectedRow = row;
+					expectedCol = col;
+					return;
+				}
+			}
+		}
 	}
 
 	@Override
